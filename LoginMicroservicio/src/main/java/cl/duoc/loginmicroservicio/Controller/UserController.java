@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/gestionusuario")
@@ -17,21 +18,53 @@ public class UserController {
 
     @Autowired
     private UsuarioService usuarioService;
-
-
-    @GetMapping("/{nombreUsuario}/{contrasena}")
-    public ResponseEntity<?> autenticarUsuario(@PathVariable String nombreUsuario, @PathVariable String contrasena) {
+    @GetMapping("/usuarios")
+    public ResponseEntity<List<Usuario>> TodosLosUsuarios() {
         try {
-            Usuario usuario = usuarioService.buscarPorNombreUsuario(nombreUsuario);
-            String tipoUsuario = "no existe";
-            boolean autenticado = false;
-            System.out.println(usuario);
+            List<Usuario> usuarios = usuarioService.TodosLosUsuarios();
+            return ResponseEntity.ok(usuarios);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<Usuario> BuscarUsuarioId(@PathVariable Long id) {
+        Optional<Usuario> usuario = usuarioService.BuscarUsuarioId(id);
+        return usuario.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 
-            if (usuario != null) {
-                tipoUsuario = usuario.getTipousuario().toString();
-                if (contrasena.equals(usuario.getContrasena())) {
-                    autenticado = true;
-                }
+    @GetMapping("/nombre/{nombreusuario}")
+    public ResponseEntity<Usuario> BuscarPorNombre(@PathVariable String nombreusuario) {
+        Usuario usuario = usuarioService.BuscarPorNombre(nombreusuario);
+        if (usuario != null) {
+            return ResponseEntity.ok(usuario);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    @PostMapping("/crearUsuario")
+    public ResponseEntity<?> CrearUsuario(@RequestBody Usuario usuario) {
+        try {
+            Usuario usuarioCreado = usuarioService.CrearUsuario(usuario);
+            return ResponseEntity.ok(usuarioCreado);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al crear el usuario.");
+        }
+    }
+    @PostMapping("/autenticar")
+    public ResponseEntity<?> autenticarUsuario(@RequestBody Map<String, String> datos) {
+        try {
+            String nombreUsuario = datos.get("nombreusuario");
+            String contrasena = datos.get("contrasena");
+
+            Usuario usuario = usuarioService.buscarPorNombreUsuario(nombreUsuario);
+            boolean autenticado = false;
+            String tipoUsuario = "no existe";
+
+            if (usuario != null && contrasena.equals(usuario.getContrasena())) {
+                autenticado = true;
+                tipoUsuario = usuario.getTipousuario();
             }
 
             Map<String, Object> respuesta = Map.of(
@@ -42,31 +75,36 @@ public class UserController {
             return ResponseEntity.ok(respuesta);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al autenticar el usuario equisde."));
+                    .body(Map.of("error", "Error al autenticar el usuario."));
+        }
+    }
+    @PutMapping("/actualizarusuario/{id}")
+    public ResponseEntity<?> actualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuarioActualizado) {
+        try {
+            Optional<Usuario> usuarioExistente = usuarioService.BuscarUsuarioId(id);
+            if (usuarioExistente.isPresent()) {
+                Usuario usuario = usuarioExistente.get();
+                usuario.setNombreusuario(usuarioActualizado.getNombreusuario());
+                usuario.setContrasena(usuarioActualizado.getContrasena());
+                usuario.setTipousuario(usuarioActualizado.getTipousuario());
+                Usuario usuarioGuardado = usuarioService.CrearUsuario(usuario); // usa el mismo método si es save()
+                return ResponseEntity.ok(usuarioGuardado);
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al actualizar el usuario.");
+        }
+    }
+    @DeleteMapping("/eliminarUsuario/{id}")
+    public ResponseEntity<?> eliminarUsuario(@PathVariable Long id) {
+        try {
+            usuarioService.EliminarUsuario(id);
+            return ResponseEntity.ok("Usuario eliminado correctamente.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar el usuario.");
         }
     }
 
-    @GetMapping("/{nombreUsuario}/{contrasena}/{tipoUsuario}")
-    public ResponseEntity<?> crearUsuario(@PathVariable String nombreUsuario, @PathVariable String contrasena, @PathVariable String tipoUsuario) {
-        try {
-            Usuario usuario = new Usuario();
-            usuario.setNombreusuario(nombreUsuario);
-            usuario.setContrasena(contrasena);
-            usuario.setTipousuario(tipoUsuario);
-            Usuario usuarioCreado = usuarioService.crearUsuario(usuario);
-            return ResponseEntity.ok(usuarioCreado);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error en la autenticación.");
-        }
-    }
 
-    @GetMapping("/eliminar-todos")
-    public ResponseEntity<?> eliminarTodosLosUsuarios() {
-        try {
-            usuarioService.eliminarTodosLosUsuarios();
-            return ResponseEntity.ok("Todos los usuarios han sido eliminados correctamente.");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al eliminar los usuarios.");
-        }
-    }
 }

@@ -25,11 +25,27 @@ public class UsuarioService {
     }
 
 
-    public Usuario crearUsuario(Usuario usuario) {
+    public Usuario CrearUsuario(Usuario usuario) {
         return usuarioRepository.save(usuario);
     }
 
     public void eliminarTodosLosUsuarios() {
         usuarioRepository.deleteAll();
+    }
+
+    public List<Usuario> TodosLosUsuarios() {
+        return usuarioRepository.findAll();
+    }
+
+    public Optional<Usuario> BuscarUsuarioId(Long id) {
+        return usuarioRepository.findById(id);
+    }
+
+    public Usuario BuscarPorNombre(String nombreusuario) {
+        return usuarioRepository.findByNombreusuario(nombreusuario);
+    }
+
+    public void EliminarUsuario(Long idusuario) {
+        usuarioRepository.deleteById(idusuario);
     }
 }
