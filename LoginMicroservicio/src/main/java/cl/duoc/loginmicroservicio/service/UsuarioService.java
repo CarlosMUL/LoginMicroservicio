@@ -3,49 +3,35 @@ package cl.duoc.loginmicroservicio.service;
 import cl.duoc.loginmicroservicio.model.Usuario;
 import cl.duoc.loginmicroservicio.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
 @Transactional
 public class UsuarioService {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository;
 
-    public Usuario buscarPorNombreUsuario(String nombreUsuario) {
-        return usuarioRepository.findByNombreusuario(nombreUsuario);
+    public UsuarioService(UsuarioRepository usuarioRepository) {
+        this.usuarioRepository = usuarioRepository;
     }
 
-
-    public Usuario CrearUsuario(Usuario usuario) {
-        return usuarioRepository.save(usuario);
-    }
-
-    public void eliminarTodosLosUsuarios() {
-        usuarioRepository.deleteAll();
-    }
-
-    public List<Usuario> TodosLosUsuarios() {
+    public List<Usuario> buscarUsuarios() {
         return usuarioRepository.findAll();
     }
 
-    public Optional<Usuario> BuscarUsuarioId(Long id) {
-        return usuarioRepository.findById(id);
+    public Usuario buscarUsuario(Long idUsuario) {
+        return usuarioRepository.findById(idUsuario).get();
     }
 
-    public Usuario BuscarPorNombre(String nombreusuario) {
-        return usuarioRepository.findByNombreusuario(nombreusuario);
+    public Usuario guardarUsuario(Usuario usuario) {
+        return usuarioRepository.save(usuario);
     }
 
-    public void EliminarUsuario(Long idusuario) {
-        usuarioRepository.deleteById(idusuario);
+    public void eliminarUsuario(Long idUsuario) {
+        usuarioRepository.deleteById(idUsuario);
     }
 }
+
